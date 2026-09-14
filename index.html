@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M32 10v30' stroke='%2360a5fa' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='46' r='8' fill='%2360a5fa'/%3E%3C/svg%3E">
-    <title>冰水机组+OLED/ARRAY 智能核算 v5.2</title>
+    <title>冰水机组+OLED/ARRAY 智能核算 v5.3</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -471,12 +471,12 @@
 <div class="container">
     <h1>
         ⚙️ 冰水+OLED/ARRAY
-        <small>双系统 v5.2</small>
+        <small>双系统 v5.3</small>
     </h1>
 
     <!-- 班次切换 -->
     <div class="shift-toggle">
-        <button class="shift-btn active" data-shift="night">🌙 夜班（标准）</button>
+        <button class="shift-btn active" data-shift="night">🌙 夜班（标准·无加成）</button>
         <button class="shift-btn" data-shift="day">☀️ 白班（预冷+加成）</button>
     </div>
 
@@ -514,7 +514,7 @@
                 </div>
             </div>
             <div class="threshold-item">
-                <label style="min-width:auto; font-size:0.8rem;">白班加成</label>
+                <label style="min-width:auto; font-size:0.8rem;" title="仅白班生效，夜班始终无加成">白班加成(仅白班)</label>
                 <div class="input-group">
                     <button type="button" data-target="bonus" data-dir="-1">−</button>
                     <input type="number" id="bonusInput" step="5" value="30">
@@ -526,7 +526,7 @@
         </div>
         <div class="threshold-hint">
             约束：0 ≤ T1 &lt; T2 &lt; T3 ≤ 50（℃）<br>
-            白班加成：在基础开度上叠加（单位：百分点），上限 100%
+            白班加成：仅白班生效，夜班始终无加成。在基础开度上叠加（单位：百分点），上限 100%
         </div>
     </details>
 
@@ -813,7 +813,7 @@
                 opening = baseOpening + bonus;
                 if (opening > 100) opening = 100;
                 bonusApplied = true;
-                modeText += '  ☀️ 白班预冷 +' + bonus + '%';
+                modeText += '  ☀️ 白班专属加成 +' + bonus + '%（夜班无加成）';
             } else if (shift === 'day' && units === 0) {
                 modeText += '  ☀️ 白班但负荷低，不启用预冷加成';
             }
