@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M32 10v30' stroke='%2360a5fa' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='46' r='8' fill='%2360a5fa'/%3E%3C/svg%3E">
+    <title>冰水机组+OLED/ARRAY 智能核算 v5.2</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+            display: flex;
+            justify-content: center;
+            color: #0f172a;
+        }
+        .container {
+            max-width: 520px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            padding: 24px 20px 30px;
+        }
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        h1 small {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: #64748b;
+            margin-left: auto;
+            background: #e2e8f0;
+            padding: 2px 10px;
+            border-radius: 40px;
+        }
+
+        /* ---------- 班次切换 ---------- */
+        .shift-toggle {
+            display: flex;
+            background: #e2e8f0;
+            border-radius: 40px;
+            padding: 4px;
+            margin-bottom: 14px;
+            gap: 4px;
+        }
+        .shift-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 11px 0;
+            border-radius: 36px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .shift-btn.active {
+            background: white;
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .shift-btn.active[data-shift="day"] {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .shift-btn:active { transform: scale(0.97); }
+
+        /* ---------- 白班操作提示条 ---------- */
+        .day-notice {
+            display: none;
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-left: 5px solid #f59e0b;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            color: #92400e;
+            font-size: 0.88rem;
+            font-weight: 500;
+            line-height: 1.55;
+            animation: fadeIn 0.25s ease;
+        }
+        .day-notice.show { display: block; }
+        .day-notice .notice-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: block;
+            margin-bottom: 4px;
+            color: #b45309;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        details {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 0 14px 14px 14px;
+            margin-bottom: 22px;
+            border: 1px solid #e2e8f0;
+        }
+        details[open] { background: #f1f5f9; border-color: #94a3b8; }
+        summary {
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 14px 0 10px 0;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: "▾";
+            margin-left: auto;
+            font-size: 1.2rem;
+            transition: 0.2s;
+            color: #64748b;
+        }
+        details[open] summary::after { transform: rotate(180deg); }
+        .threshold-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 10px;
+            margin-top: 6px;
+        }
+        .threshold-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1 0 auto;
+            min-width: 110px;
+        }
+        .threshold-item label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #475569;
+            min-width: 24px;
+        }
+        .threshold-item .input-group {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .threshold-item .input-group button {
+            background: #e2e8f0;
+            border: none;
+            width: 30px;
+            height: 34px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            cursor: pointer;
+            line-height: 1;
+            touch-action: manipulation;
+        }
+        .threshold-item .input-group button:active { background: #cbd5e1; }
+        .threshold-item .input-group input[type="number"] {
+            width: 58px;
+            border: none;
+            padding: 4px 0;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            background: white;
+            color: #0f172a;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        .threshold-item .input-group input[type="number"]::-webkit-outer-spin-button,
+        .threshold-item .input-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .btn-apply {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            height: 36px;
+            white-space: nowrap;
+            margin-left: auto;
+        }
+        .btn-apply:active { transform: scale(0.94); background: #2563eb; }
+        .threshold-hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+        .calc-area { display: flex; flex-direction: column; gap: 16px; }
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .input-row label {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1e293b;
+        }
+        .input-row input[type="number"] {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: #f8fafc;
+            color: #0f172a;
+            outline: none;
+            transition: 0.15s;
+        }
+        .input-row input[type="number"]:focus {
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        .btn-calc {
+            background: #0f172a;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .btn-calc:active { transform: scale(0.96); background: #1e293b; }
+
+        .result-card {
+            margin-top: 20px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 18px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-left: 6px solid #3b82f6;
+            transition: 0.2s;
+        }
+        .result-card.day-mode {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 1rem;
+            padding: 4px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-item .label { color: #475569; font-weight: 500; }
+        .result-item .value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #0f172a;
+        }
+        .result-item .value.highlight { color: #2563eb; }
+        .result-card.day-mode .result-item .value.highlight { color: #d97706; }
+        .shift-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 40px;
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .shift-badge.day {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .mode-desc {
+            font-size: 0.85rem;
+            color: #475569;
+            text-align: center;
+            padding: 6px 8px;
+            background: #e9edf2;
+            border-radius: 40px;
+            margin: 2px 0;
+            line-height: 1.4;
+        }
+
+        /* 结果卡片内的白班操作提示 */
+        .result-day-notice {
+            display: none;
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #9a3412;
+            font-size: 0.82rem;
+            font-weight: 500;
+            line-height: 1.55;
+            margin-top: 4px;
+        }
+        .result-day-notice.show { display: block; }
+        .result-day-notice .icon {
+            font-weight: 700;
+            margin-right: 4px;
+        }
+
+        .alert-box {
+            margin-top: 8px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #fef9c3;
+            color: #854d0e;
+            border-left: 4px solid #eab308;
+            font-weight: 500;
+            font-size: 0.95rem;
+            display: none;
+        }
+        .alert-box.show { display: block; }
+        .alert-box.info-blue {
+            background: #dbeafe;
+            border-left-color: #3b82f6;
+            color: #1e3a8a;
+        }
+        .alert-box.warn-orange {
+            background: #ffedd5;
+            border-left-color: #ea580c;
+            color: #9a3412;
+        }
+        .footer-tip {
+            margin-top: 16px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .footer-tip .safety {
+            display: block;
+            margin-top: 6px;
+            color: #b45309;
+            font-weight: 600;
+        }
+        .toast {
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .toast.show { display: block; }
+        .section-divider {
+            border-top: 2px solid #cbd5e1;
+            margin-top: 4px;
+            padding-top: 8px;
+        }
+        .oa-value {
+            font-size: 1rem !important;
+            text-align: right;
+            line-height: 1.3;
+        }
+        .oa-value .oa-line { display: block; }
+        .oa-value .oa-line.freq {
+            color: #7c3aed;
+            font-weight: 800;
+        }
+
+        /* ---------- 历史记录 ---------- */
+        .history-section { margin-bottom: 22px; }
+        .history-count {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #64748b;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 40px;
+            margin-left: 6px;
+            white-space: nowrap;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+        .history-empty {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 16px 0;
+        }
+        .history-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .history-item:active { background: #f1f5f9; }
+        .history-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .history-time {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .history-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .history-body b { color: #0f172a; }
+        .btn-clear-history {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px 0;
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .btn-clear-history:active { background: #fee2e2; }
+        .history-hint {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 8px;
+            line-height: 1.5;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        ⚙️ 冰水+OLED/ARRAY
+        <small>双系统 v5.2</small>
+    </h1>
+
+    <!-- 班次切换 -->
+    <div class="shift-toggle">
+        <button class="shift-btn active" data-shift="night">🌙 夜班（标准）</button>
+        <button class="shift-btn" data-shift="day">☀️ 白班（预冷+加成）</button>
+    </div>
+
+    <!-- 白班操作提示条（顶部） -->
+    <div id="dayNotice" class="day-notice">
+        <span class="notice-title">📢 白班操作提示</span>
+        由于预冷调整后<b>中温水冷机组调控不及时，水温会产生波动</b>，因此调整预冷盘管开度前，请务必先与<b>对应主办</b>确认后再操作，避免系统水温异常波动。
+    </div>
+
+    <details open>
+        <summary>📐 自定义参数</summary>
+        <div class="threshold-row">
+            <div class="threshold-item">
+                <label>T1</label>
+                <div class="input-group">
+                    <button type="button" data-target="t1" data-dir="-1">−</button>
+                    <input type="number" id="t1Input" step="0.5" value="15">
+                    <button type="button" data-target="t1" data-dir="1">+</button>
+                </div>
+            </div>
+            <div class="threshold-item">
+                <label>T2</label>
+                <div class="input-group">
+                    <button type="button" data-target="t2" data-dir="-1">−</button>
+                    <input type="number" id="t2Input" step="0.5" value="20">
+                    <button type="button" data-target="t2" data-dir="1">+</button>
+                </div>
+            </div>
+            <div class="threshold-item">
+                <label>T3</label>
+                <div class="input-group">
+                    <button type="button" data-target="t3" data-dir="-1">−</button>
+                    <input type="number" id="t3Input" step="0.5" value="26">
+                    <button type="button" data-target="t3" data-dir="1">+</button>
+                </div>
+            </div>
+            <div class="threshold-item">
+                <label style="min-width:auto; font-size:0.8rem;">白班加成</label>
+                <div class="input-group">
+                    <button type="button" data-target="bonus" data-dir="-1">−</button>
+                    <input type="number" id="bonusInput" step="5" value="30">
+                    <button type="button" data-target="bonus" data-dir="1">+</button>
+                </div>
+                <span style="font-size:0.8rem;color:#64748b;">%</span>
+            </div>
+            <button class="btn-apply" id="applyThresholdBtn">✅ 应用</button>
+        </div>
+        <div class="threshold-hint">
+            约束：0 ≤ T1 &lt; T2 &lt; T3 ≤ 50（℃）<br>
+            白班加成：在基础开度上叠加（单位：百分点），上限 100%
+        </div>
+    </details>
+
+    <div class="calc-area">
+        <div id="toastMsg" class="toast"></div>
+        <div class="input-row">
+            <label for="tdInput">🌡️ 露点温度</label>
+            <input type="number" id="tdInput" step="0.1" placeholder="如 22.5" value="22.5">
+        </div>
+        <button class="btn-calc" id="calcBtn">🧮 核算</button>
+
+        <div class="result-card" id="resultCard">
+            <div class="result-item">
+                <span class="label">当前班次</span>
+                <span class="value" id="displayShift"><span class="shift-badge">🌙 夜班</span></span>
+            </div>
+            <div class="result-item">
+                <span class="label">当前露点</span>
+                <span class="value" id="displayTd">-- ℃</span>
+            </div>
+            <div class="result-item">
+                <span class="label">❄️ 低温机组建议</span>
+                <span class="value highlight" id="displayUnits">-- 台</span>
+            </div>
+            <div class="result-item">
+                <span class="label">🌀 预冷盘管开度</span>
+                <span class="value highlight" id="displayOpening">-- %</span>
+            </div>
+            <div class="result-item section-divider">
+                <span class="label">📟 OLED / ARRAY</span>
+                <span class="value oa-value" id="displayOledArray">
+                    <span class="oa-line">-- 台</span>
+                    <span class="oa-line freq">-- Hz</span>
+                </span>
+            </div>
+            <div id="modeDesc" class="mode-desc">--</div>
+            <!-- 白班结果内附加说明 -->
+            <div id="resultDayNotice" class="result-day-notice">
+                <span class="icon">⚠️</span>白班调整预冷前，请先与对应主办确认（中温水冷机组响应滞后，水温易波动）。
+            </div>
+            <div id="alertBox" class="alert-box"></div>
+        </div>
+        <details id="historySection" class="history-section">
+            <summary>📜 历史记录 <span class="history-count" id="historyCount">0 条</span></summary>
+            <div id="historyList" class="history-list"></div>
+            <button class="btn-clear-history" id="clearHistoryBtn">🗑️ 清空历史记录</button>
+            <div class="history-hint">记录仅保存在本机浏览器（localStorage），换设备不共享，清除浏览器数据会丢失。</div>
+        </details>
+        <div class="footer-tip">
+            冰水阈值可自定义 · OLED/ARRAY 频率线性插值 · 上限 33Hz
+            <span class="safety">🔔 调整预冷前须与对应主办确认后再操作</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const DEFAULT_T1 = 15;
+        const DEFAULT_T2 = 20;
+        const DEFAULT_T3 = 26;
+        const DEFAULT_BONUS = 30;
+
+        const t1Input = document.getElementById('t1Input');
+        const t2Input = document.getElementById('t2Input');
+        const t3Input = document.getElementById('t3Input');
+        const bonusInput = document.getElementById('bonusInput');
+        const applyBtn = document.getElementById('applyThresholdBtn');
+        const tdInput = document.getElementById('tdInput');
+        const calcBtn = document.getElementById('calcBtn');
+        const displayShift = document.getElementById('displayShift');
+        const displayTd = document.getElementById('displayTd');
+        const displayUnits = document.getElementById('displayUnits');
+        const displayOpening = document.getElementById('displayOpening');
+        const displayOledArray = document.getElementById('displayOledArray');
+        const alertBox = document.getElementById('alertBox');
+        const modeDesc = document.getElementById('modeDesc');
+        const toastMsg = document.getElementById('toastMsg');
+        const resultCard = document.getElementById('resultCard');
+        const dayNotice = document.getElementById('dayNotice');
+        const resultDayNotice = document.getElementById('resultDayNotice');
+        const historyList = document.getElementById('historyList');
+        const historyCount = document.getElementById('historyCount');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        let currentShift = 'night';
+
+        // ---------- 存储与加载 ----------
+        function loadConfig() {
+            try {
+                const saved = localStorage.getItem('hvac_thresholds');
+                if (saved) {
+                    const p = JSON.parse(saved);
+                    if (p.t1 !== undefined && p.t2 !== undefined && p.t3 !== undefined) {
+                        return {
+                            t1: p.t1, t2: p.t2, t3: p.t3,
+                            bonus: p.bonus !== undefined ? p.bonus : DEFAULT_BONUS
+                        };
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            return { t1: DEFAULT_T1, t2: DEFAULT_T2, t3: DEFAULT_T3, bonus: DEFAULT_BONUS };
+        }
+
+        function saveConfig(cfg) {
+            localStorage.setItem('hvac_thresholds', JSON.stringify(cfg));
+        }
+
+        function loadShift() {
+            try {
+                const s = localStorage.getItem('hvac_shift');
+                if (s === 'day' || s === 'night') return s;
+            } catch (e) { /* ignore */ }
+            return 'night';
+        }
+
+        function saveShift(s) {
+            localStorage.setItem('hvac_shift', s);
+        }
+
+        // ---------- 历史记录（本地保存/读取） ----------
+        const HISTORY_KEY = 'hvac_history';
+        const LAST_TD_KEY = 'hvac_last_td';
+        const MAX_HISTORY = 100;
+
+        function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+        function loadHistory() {
+            try {
+                const h = localStorage.getItem(HISTORY_KEY);
+                if (h) {
+                    const arr = JSON.parse(h);
+                    if (Array.isArray(arr)) return arr;
+                }
+            } catch (e) { /* ignore */ }
+            return [];
+        }
+
+        function saveHistoryArr(arr) {
+            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); } catch (e) { /* ignore */ }
+        }
+
+        function loadLastTd() {
+            try {
+                const v = localStorage.getItem(LAST_TD_KEY);
+                if (v !== null && !isNaN(parseFloat(v))) return parseFloat(v);
+            } catch (e) { /* ignore */ }
+            return null;
+        }
+
+        function saveLastTd(td) {
+            try { localStorage.setItem(LAST_TD_KEY, String(td)); } catch (e) { /* ignore */ }
+        }
+
+        function recordCalculation(td, cfg, chillerResult, oaResult) {
+            const now = new Date();
+            const rec = {
+                time: now.toISOString(),
+                timeText: pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' +
+                           pad(now.getHours()) + ':' + pad(now.getMinutes()),
+                shift: currentShift,
+                td: Math.round(td * 10) / 10,
+                t1: cfg.t1, t2: cfg.t2, t3: cfg.t3, bonus: cfg.bonus,
+                units: chillerResult.units,
+                opening: Math.round(chillerResult.opening),
+                oaCount: oaResult.count,
+                oaFreq: oaResult.freq
+            };
+            let arr = loadHistory();
+            arr.unshift(rec);
+            if (arr.length > MAX_HISTORY) arr = arr.slice(0, MAX_HISTORY);
+            saveHistoryArr(arr);
+            saveLastTd(td);
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const arr = loadHistory();
+            historyCount.textContent = arr.length + ' 条';
+            if (arr.length === 0) {
+                historyList.innerHTML = '<div class="history-empty">暂无记录，点击「核算」后自动保存</div>';
+                return;
+            }
+            historyList.innerHTML = arr.map(function(r, i) {
+                const badge = r.shift === 'day'
+                    ? '<span class="shift-badge day">☀️ 白班</span>'
+                    : '<span class="shift-badge">🌙 夜班</span>';
+                return '<div class="history-item" data-idx="' + i + '">' +
+                    '<div class="history-head">' +
+                        '<span class="history-time">' + r.timeText + '</span>' + badge +
+                    '</div>' +
+                    '<div class="history-body">' +
+                        '<span>露点 <b>' + r.td.toFixed(1) + '℃</b></span>' +
+                        '<span>❄️ <b>' + r.units + '</b> 台</span>' +
+                        '<span>🌀 <b>' + r.opening + '</b>%</span>' +
+                        '<span>📟 <b>' + r.oaCount + '</b>台/<b>' + r.oaFreq.toFixed(1) + '</b>Hz</span>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        function clearHistory() {
+            if (loadHistory().length === 0) { showToast('⚠️ 暂无历史记录'); return; }
+            if (!confirm('确定清空全部历史记录吗？此操作不可恢复。')) return;
+            saveHistoryArr([]);
+            renderHistory();
+            showToast('✅ 历史记录已清空');
+        }
+
+        function restoreFromHistory(idx) {
+            const arr = loadHistory();
+            const r = arr[idx];
+            if (!r) return;
+            tdInput.value = r.td;
+            applyConfigToInputs({ t1: r.t1, t2: r.t2, t3: r.t3, bonus: r.bonus });
+            saveConfig({ t1: r.t1, t2: r.t2, t3: r.t3, bonus: r.bonus });
+            if (r.shift !== currentShift) {
+                currentShift = r.shift;
+                document.querySelectorAll('.shift-btn').forEach(function(b) {
+                    b.classList.toggle('active', b.dataset.shift === currentShift);
+                });
+                saveShift(currentShift);
+            }
+            doCalculate();
+            showToast('✅ 已恢复该条记录');
+        }
+
+        function applyConfigToInputs(cfg) {
+            t1Input.value = cfg.t1;
+            t2Input.value = cfg.t2;
+            t3Input.value = cfg.t3;
+            bonusInput.value = cfg.bonus;
+        }
+
+        function getConfigFromInputs() {
+            const t1 = parseFloat(t1Input.value);
+            const t2 = parseFloat(t2Input.value);
+            const t3 = parseFloat(t3Input.value);
+            const bonus = parseFloat(bonusInput.value);
+            if (isNaN(t1) || isNaN(t2) || isNaN(t3) || isNaN(bonus)) return null;
+            return { t1, t2, t3, bonus };
+        }
+
+        function applyThreshold() {
+            const cfg = getConfigFromInputs();
+            if (!cfg) { showToast('❌ 请输入有效的数字'); return false; }
+            if (cfg.t1 < 0 || cfg.t3 > 50) { showToast('⚠️ T1 ≥ 0℃，T3 ≤ 50℃'); return false; }
+            if (cfg.t1 >= cfg.t2 || cfg.t2 >= cfg.t3) { showToast('❌ 必须满足 T1 < T2 < T3'); return false; }
+            if (cfg.bonus < 0 || cfg.bonus > 100) { showToast('⚠️ 白班加成应在 0~100% 之间'); return false; }
+            saveConfig(cfg);
+            showToast('✅ 参数已更新并保存');
+            if (tdInput.value.trim() !== '') doCalculate();
+            return true;
+        }
+
+        // ---------- 冰水核心 ----------
+        function calculateChiller(td, cfg, shift) {
+            const { t1, t2, t3, bonus } = cfg;
+            let units = 0;
+            let baseOpening = 0;
+            let alertMsg = null;
+            let alertType = '';
+            let modeText = '';
+
+            if (td < t1) {
+                units = 0; baseOpening = 0;
+                modeText = '🔹 无负荷待机 (预冷 0%)';
+            } else if (td >= t1 && td < t2) {
+                units = 1; baseOpening = (td - t1) * 10;
+                modeText = '🔸 1台低温运行 · 预冷 0% 线性上升 (10%/℃)';
+            } else if (td >= t2 && td < t3) {
+                units = 2; baseOpening = (td - t2) * 10;
+                modeText = '❄️ 2台低温运行 · 预冷归零后线性上升 (10%/℃)';
+            } else {
+                units = 3; baseOpening = (td - t3) * 10;
+                modeText = '❄️❄️ 3台低温运行 · 预冷归零后线性上升 (10%/℃)';
+            }
+
+            if (baseOpening > 100) baseOpening = 100;
+            if (baseOpening < 0) baseOpening = 0;
+
+            let opening = baseOpening;
+            let bonusApplied = false;
+            if (shift === 'day' && units > 0) {
+                opening = baseOpening + bonus;
+                if (opening > 100) opening = 100;
+                bonusApplied = true;
+                modeText += '  ☀️ 白班预冷 +' + bonus + '%';
+            } else if (shift === 'day' && units === 0) {
+                modeText += '  ☀️ 白班但负荷低，不启用预冷加成';
+            }
+
+            if (units === 1 && opening >= 50) {
+                alertMsg = '⚠️ 预冷开度已达 ' + Math.round(opening) + '%，建议增开第二台低温机（增开后预冷将归零）';
+                alertType = 'warn-orange';
+            } else if (units === 2 && opening >= 50) {
+                alertMsg = '⚠️ 预冷开度已达 ' + Math.round(opening) + '%，建议增开第三台低温机（增开后预冷将归零）';
+                alertType = 'warn-orange';
+            } else if (units === 3 && opening >= 80) {
+                alertMsg = '⚠️ 极端高温！预冷开度已达 ' + Math.round(opening) + '%，注意系统极限负荷';
+                alertType = 'warn-orange';
+            } else if (units === 2 && opening > 0) {
+                alertMsg = '💡 第二台运行中，预冷归零后线性增加，当前 ' + Math.round(opening) + '%';
+                alertType = 'info-blue';
+            } else if (units === 3 && opening > 0) {
+                alertMsg = '💡 第三台运行中，预冷归零后线性增加，当前 ' + Math.round(opening) + '%';
+                alertType = 'info-blue';
+            }
+
+            return { units, opening, baseOpening, bonusApplied, alertMsg, alertType, modeText };
+        }
+
+        // ---------- OLED/ARRAY ----------
+        function calculateOledArray(td) {
+            let count = 0, freq = 0, modeNote = '';
+
+            if (td < 15) {
+                count = 5; freq = 30.0; modeNote = '基准';
+            } else if (td < 17) {
+                count = 5; freq = 30 + (td - 15) / 2 * 3; modeNote = '线性';
+            } else if (td <= 20) {
+                count = 6; freq = 30 + (td - 17) / 3 * 3; modeNote = '线性';
+            } else if (td < 22) {
+                count = 7; freq = 30 + (td - 20) / 2 * 2; modeNote = '线性';
+            } else if (td < 24) {
+                count = 7; freq = 32 + (td - 22) / 2 * 1; modeNote = '推断';
+            } else if (td < 27) {
+                count = 8; freq = 30 + (td - 24) / 3 * 3; modeNote = '线性';
+            } else {
+                count = 8; freq = 33.0; modeNote = '上限';
+            }
+
+            if (freq > 33) freq = 33;
+            if (freq < 30) freq = 30;
+            return { count, freq: Math.round(freq * 10) / 10, note: modeNote };
+        }
+
+        // ---------- 渲染 ----------
+        function renderResult(td, chillerResult, oaResult, shift) {
+            if (shift === 'day') {
+                displayShift.innerHTML = '<span class="shift-badge day">☀️ 白班</span>';
+                resultCard.classList.add('day-mode');
+                dayNotice.classList.add('show');
+                resultDayNotice.classList.add('show');
+            } else {
+                displayShift.innerHTML = '<span class="shift-badge">🌙 夜班</span>';
+                resultCard.classList.remove('day-mode');
+                dayNotice.classList.remove('show');
+                resultDayNotice.classList.remove('show');
+            }
+
+            displayTd.textContent = td.toFixed(1) + ' ℃';
+            displayUnits.textContent = chillerResult.units + ' 台';
+            displayOpening.textContent = Math.round(chillerResult.opening) + ' %';
+
+            let oaHtml = '';
+            if (isNaN(td) || td < 0) {
+                oaHtml = '<span class="oa-line">-- 台</span><span class="oa-line freq">-- Hz</span>';
+            } else {
+                oaHtml = '<span class="oa-line">' + oaResult.count + ' 台</span>';
+                oaHtml += '<span class="oa-line freq">' + oaResult.freq.toFixed(1) + ' Hz</span>';
+                if (oaResult.note && oaResult.note !== '线性') {
+                    oaHtml += '<span class="oa-line" style="font-size:0.7rem;color:#64748b;">(' + oaResult.note + ')</span>';
+                }
+            }
+            displayOledArray.innerHTML = oaHtml;
+
+            modeDesc.textContent = chillerResult.modeText || '';
+
+            if (chillerResult.alertMsg) {
+                alertBox.textContent = chillerResult.alertMsg;
+                alertBox.className = 'alert-box show ' + (chillerResult.alertType || '');
+            } else {
+                alertBox.className = 'alert-box';
+                alertBox.textContent = '';
+            }
+        }
+
+        function doCalculate() {
+            const td = parseFloat(tdInput.value);
+            if (isNaN(td)) { showToast('❌ 请输入有效的露点温度'); return; }
+
+            const cfg = getConfigFromInputs();
+            if (!cfg) { showToast('❌ 参数设置有误，请检查'); return; }
+
+            const stored = loadConfig();
+            if (cfg.t1 >= cfg.t2 || cfg.t2 >= cfg.t3 || cfg.t1 < 0 || cfg.t3 > 50) {
+                showToast('⚠️ 当前阈值不合法，已恢复默认值');
+                applyConfigToInputs(stored);
+                const c = calculateChiller(td, stored, currentShift);
+                const o = calculateOledArray(td);
+                renderResult(td, c, o, currentShift);
+                recordCalculation(td, stored, c, o);
+                return;
+            }
+
+            const c = calculateChiller(td, cfg, currentShift);
+            const o = calculateOledArray(td);
+            renderResult(td, c, o, currentShift);
+            recordCalculation(td, cfg, c, o);
+            toastMsg.classList.remove('show');
+        }
+
+        function showToast(msg) {
+            toastMsg.textContent = msg;
+            toastMsg.classList.add('show');
+            setTimeout(() => { toastMsg.classList.remove('show'); }, 3000);
+        }
+
+        // ---------- 班次切换 ----------
+        document.querySelectorAll('.shift-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentShift = this.dataset.shift;
+                document.querySelectorAll('.shift-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.shift === currentShift);
+                });
+                saveShift(currentShift);
+                doCalculate();
+            });
+        });
+
+        // ---------- 步进按钮 ----------
+        document.querySelectorAll('.threshold-item .input-group button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.dataset.target;
+                const dir = parseInt(this.dataset.dir, 10);
+                let input, step = 0.5;
+                if (targetId === 't1') input = t1Input;
+                else if (targetId === 't2') input = t2Input;
+                else if (targetId === 't3') input = t3Input;
+                else if (targetId === 'bonus') { input = bonusInput; step = 5; }
+                if (!input) return;
+                let val = parseFloat(input.value) || 0;
+                val += dir * step;
+                if (targetId === 'bonus') {
+                    if (val < 0) val = 0;
+                    if (val > 100) val = 100;
+                } else {
+                    if (val < 0) val = 0;
+                    if (val > 50) val = 50;
+                }
+                input.value = val;
+            });
+        });
+
+        // ---------- 初始化 ----------
+        function init() {
+            const saved = loadConfig();
+            applyConfigToInputs(saved);
+
+            currentShift = loadShift();
+            document.querySelectorAll('.shift-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.shift === currentShift);
+            });
+
+            const lastTd = loadLastTd();
+            if (lastTd !== null) tdInput.value = lastTd;
+
+            const tdStr = tdInput.value.trim();
+            const td = tdStr !== '' ? parseFloat(tdStr) : 22.5;
+            if (tdStr === '') tdInput.value = '22.5';
+            if (!isNaN(td)) {
+                const c = calculateChiller(td, saved, currentShift);
+                const o = calculateOledArray(td);
+                renderResult(td, c, o, currentShift);
+            }
+            renderHistory();
+        }
+
+        applyBtn.addEventListener('click', applyThreshold);
+        calcBtn.addEventListener('click', doCalculate);
+        tdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); doCalculate(); }
+        });
+        [t1Input, t2Input, t3Input, bonusInput].forEach(inp => {
+            inp.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); applyThreshold(); }
+            });
+        });
+
+        // ---------- 历史记录交互 ----------
+        historyList.addEventListener('click', function(e) {
+            const item = e.target.closest('.history-item');
+            if (!item) return;
+            restoreFromHistory(parseInt(item.dataset.idx, 10));
+        });
+        clearHistoryBtn.addEventListener('click', clearHistory);
+
+        init();
+    })();
+</script>
+</body>
+</html>
