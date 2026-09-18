@@ -480,9 +480,9 @@
         <button class="shift-btn" data-shift="day">☀️ 白班（预冷+加成）</button>
     </div>
 
-    <!-- 白班操作提示条（顶部） -->
+    <!-- 预冷调整操作提示条（顶部，白班/夜班均显示） -->
     <div id="dayNotice" class="day-notice">
-        <span class="notice-title">📢 白班操作提示</span>
+        <span class="notice-title">📢 预冷调整操作提示</span>
         调整预冷盘管开度前<b>10分钟</b>，请先将运行中的<b>中温单冷机组出水温度设定值下调0.3℃</b>，这样即可避免调整过程中出现<b>出水温度高报</b>。
     </div>
 
@@ -868,14 +868,13 @@
             if (shift === 'day') {
                 displayShift.innerHTML = '<span class="shift-badge day">☀️ 白班</span>';
                 resultCard.classList.add('day-mode');
-                dayNotice.classList.add('show');
-                resultDayNotice.classList.add('show');
             } else {
                 displayShift.innerHTML = '<span class="shift-badge">🌙 夜班</span>';
                 resultCard.classList.remove('day-mode');
-                dayNotice.classList.remove('show');
-                resultDayNotice.classList.remove('show');
             }
+            // 只要调整预冷盘管，无论白班夜班都会影响中温供水温度，提示均显示
+            dayNotice.classList.add('show');
+            resultDayNotice.classList.add('show');
 
             displayTd.textContent = td.toFixed(1) + ' ℃';
             displayUnits.textContent = chillerResult.units + ' 台';
